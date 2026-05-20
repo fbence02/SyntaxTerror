@@ -32,7 +32,7 @@ function calculateRating(stop) {
         score -= 15;
     }
 
-    if (stop["Spaces available"] && stop["Spaces available"].includes("0")) {
+    if (stop["Spaces available"] !== undefined && String(stop["Spaces available"]).startsWith("0")) {
         score -= 10;
     }
     if (stop["Bus bay available"] === "No") {
@@ -107,7 +107,7 @@ function initControls(jsonData) {
     }
 
     allStops = jsonData.map(stop => {
-        const coords = stop["Coordinates"].split(", ");
+        const coords = stop["Coordinates"].split(",").map(c => c.trim());
         const lat = parseFloat(coords[1]);
         const lng = parseFloat(coords[0]);
 
@@ -132,7 +132,7 @@ function applyFiltersAndRender() {
         filteredStops = filteredStops.filter(stop => stop["Covered"] === "Yes");
     }
     if (currentFilters.problematic) {
-        filteredStops = filteredStops.filter(stop => stop["Problems"] && stop["Problems"] !== "None" && stop["Problems"] !== "Nincs észlelt probléma" && stop["Problems"] !== "");
+        filteredStops = filteredStops.filter(stop => stop["Problems"] && !["None", "Nincs észlelt probléma", "", "No reported issues"].includes(stop["Problems"]));
     }
 
     if (currentSort === 'asc') {
@@ -170,7 +170,7 @@ function renderFilteredStops(stops) {
             <hr style="margin:5px 0;">
             <b>Index:</b> <span style="color:${color}; font-weight:bold; font-size:1.1rem;">${stop.score}/100</span><br>
             <b>Temperature:</b> ${stop.Temperature} °C<br>
-            <i>${stop.Problems && stop.Problems !== "None" && stop.Problems !== "Nincs észlelt probléma" && stop.Problems !== "" ? "Issues: " + stop.Problems : "No issues reported"}</i>
+            <i>${stop.Problems && !["None", "Nincs észlelt probléma", "", "No reported issues"].includes(stop["Problems"]) ? "Issues: " + stop.Problems : "No issues reported"}</i>
         `);
 
         const li = document.createElement('li');
@@ -193,14 +193,43 @@ function renderFilteredStops(stops) {
                 <span>${stop["Covered"] === "Yes" ? "Available rain shelter" : "No Rain shelter"}</span>
             </div>
             <div style="font-size: 0.85rem; color: #ff6b81;">
-                <i>${stop.Problems && stop.Problems !== "None" && stop.Problems !== "Nincs észlelt probléma" && stop.Problems !== "" ? "Issues: " + stop.Problems : "There are no issues"}</i>
+                <i>${stop.Problems && !["None", "Nincs észlelt probléma", "", "No reported issues"].includes(stop["Problems"]) ? "Issues: " + stop.Problems : "There are no issues"}</i>
             </div>
         `;
         listContainer.appendChild(li);
     });
 }
 
-fetch('BusStop.json')
-    .then(response => response.json())
-    .then(data => initControls(data))
-    .catch(error => console.error(error));
+async function fetchSmartBusStopData() {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/data');
+        
+        if (!response.ok) {
+            throw new Error(`Szerver hiba: ${response.status}`);
+        }
+        const data = await response.json();
+
+        if (Object.keys(data).length === 0) {
+            console.log("Backend has no data yet, polling again in 5 seconds...");
+            const listContainer = document.querySelector('#bus-stop-list ul');
+            if (listContainer && !listContainer.querySelector('.waiting-message')) {
+                listContainer.innerHTML = '<li class="waiting-message" style="text-align: center; padding: 20px; color: #fff; background: rgba(0,0,0,0.2); border-radius: 8px;">Várakozás az adatokra a szerverről...</li>';
+            }
+            setTimeout(fetchSmartBusStopData, 5000);
+            return;
+        }
+        console.log("Sikeresen lekérve a backendről:", data);
+
+        const stopsArray = data.data || (Array.isArray(data) ? data : Object.values(data).find(Array.isArray) || []);
+        initControls(stopsArray);
+
+    } catch (error) {
+        console.error("Nem sikerült elérni a backendet:", error);
+        const listContainer = document.querySelector('#bus-stop-list ul');
+        if (listContainer) {
+            listContainer.innerHTML = '<li style="text-align: center; padding: 20px; color: #ff4757; background: rgba(0,0,0,0.2); border-radius: 8px;">Hiba a szerverrel való kommunikáció során.</li>';
+        }
+    }
+}
+
+fetchSmartBusStopData();
