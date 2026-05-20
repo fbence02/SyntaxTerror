@@ -37,6 +37,11 @@ main {
     overflow: hidden;
 }
 
+#map {
+    width: 100%;
+    height: 100%
+}
+
 #bus-stop-list {
     flex: 1;
     height: 100%;
