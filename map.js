@@ -200,7 +200,7 @@ function renderFilteredStops(stops) {
     });
 }
 
-fetch('BusStops_FELTOLTOTT.json')
+fetch('BusStop.json')
     .then(response => response.json())
     .then(data => initControls(data))
     .catch(error => console.error(error));
