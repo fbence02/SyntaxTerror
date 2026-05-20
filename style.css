@@ -15,8 +15,34 @@ header {
     padding: 0 20px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     background: rgba(0, 0, 0, 0.2);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+header .left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+header .right {
+    cursor: pointer;
+}
+
+header .right:hover {
+    color: gray;
+    border: 1px solid gray;
+}
+
+header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+header a {
+    font-size: 1.5rem;
+    margin: 0;
 }
 
 main {
@@ -27,6 +53,24 @@ main {
     overflow: hidden;
 }
 
+.refresh-btn {
+    font-size: 1.2rem;
+    color: white;
+    text-decoration: none;
+    border: 1px solid white;
+    padding: 5px 15px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.refresh-btn:hover {
+    color: gray;
+    border-color: gray;
+    cursor: pointer;
+    border-radius: 10px;
+}
+
 #map-container {
     flex: 2;
     aspect-ratio: 1 / 1;
@@ -35,6 +79,11 @@ main {
     background: #0f3460;
     border-radius: 15px;
     overflow: hidden;
+}
+
+#map {
+    width: 100%;
+    height: 100%
 }
 
 #bus-stop-list {
