@@ -1,138 +1,29 @@
 <!DOCTYPE html>
-<html lang="hu">
-
+<html lang="en">
 <head>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="script.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Stop Index | DKV Dashboard</title>
+    <title>Smart Bus Stop Rating</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-
-    <nav class="sidebar">
-        <div class="logo">
-            <i class="fa-solid fa-bus-simple"></i>
-            <h2>SmartStop</h2>
+    <header>
+        <h1>Smart Bus Stop</h1>
+    </header>
+    
+    <main>
+        <div id="map-container">
+            <div id="map"></div>
         </div>
-        <ul class="menu">
-            <li class="active" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-line"></i> Dashboard</li>
-            <li onclick="switchTab('map')"><i class="fa-solid fa-map-location-dot"></i> Térkép nézet</li>
-            <li onclick="switchTab('stops')"><i class="fa-solid fa-location-dot"></i> Megállók listája</li>
-            <li onclick="switchTab('analytics')"><i class="fa-solid fa-cloud-sun"></i> Környezeti Adatok</li>
-            <li onclick="switchTab('interventions')"><i class="fa-solid fa-screwdriver-wrench"></i> Beavatkozások</li>
-        </ul>
-    </nav>
-
-    <main class="content">
-        <header>
-            <div>
-                <h1>Megálló Értékelő Rendszer</h1>
-                <p>Valós idejű komfort, biztonság és hozzáférhetőség elemzés</p>
-            </div>
-            <div class="user-profile">
-                <i class="fa-solid fa-bell"></i>
-                <div class="avatar"><i class="fa-solid fa-user"></i></div>
-            </div>
-        </header>
-
-        <section id="dashboard" class="view-section active-view">
-
-            <div class="kpi-grid">
-                <div class="kpi-card glass">
-                    <div class="kpi-icon"><i class="fa-solid fa-star-half-stroke"></i></div>
-                    <div class="kpi-data">
-                        <h3>Átlagos Városi Index</h3>
-                        <p class="value" style="color: #00e5ff;">7.8 / 10</p>
-                    </div>
-                </div>
-                <div class="kpi-card glass">
-                    <div class="kpi-icon warning"><i class="fa-solid fa-temperature-arrow-up"></i></div>
-                    <div class="kpi-data">
-                        <h3>Klímakockázatos Megállók</h3>
-                        <p class="value" style="color: #ff4757;">12 db</p>
-                    </div>
-                </div>
-                <div class="kpi-card glass">
-                    <div class="kpi-icon success"><i class="fa-solid fa-wheelchair"></i></div>
-                    <div class="kpi-data">
-                        <h3>Akadálymentesített</h3>
-                        <p class="value" style="color: #2ed573;">68%</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="main-grid">
-                <div class="glass panel stop-details">
-                    <div class="panel-header">
-                        <h2>Fókuszban: Kálvin tér (Központ)</h2>
-                        <span class="badge red">Sürgős beavatkozás</span>
-                    </div>
-
-                    <div class="metrics">
-                        <div class="metric">
-                            <span>Időjárás elleni védelem</span>
-                            <div class="progress-bar">
-                                <div class="fill" style="width: 30%; background: #ff4757;"></div>
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <span>Utastájékoztatás minősége</span>
-                            <div class="progress-bar">
-                                <div class="fill" style="width: 85%; background: #2ed573;"></div>
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <span>Fizikai állapot & Biztonság</span>
-                            <div class="progress-bar">
-                                <div class="fill" style="width: 50%; background: #ffa502;"></div>
-                            </div>
-                        </div>
-                        <div class="metric">
-                            <span>Környezet (Levegő/Zaj)</span>
-                            <div class="progress-bar">
-                                <div class="fill" style="width: 65%; background: #00e5ff;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="environment-data">
-                        <div class="env-item">
-                            <i class="fa-solid fa-wind"></i> AQI: <strong>45 (Jó)</strong>
-                        </div>
-                        <div class="env-item">
-                            <i class="fa-solid fa-users"></i> Forgalom: <strong>Magas</strong>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass panel priority-list">
-                    <h2>Javasolt Fejlesztések (ROI alapján)</h2>
-                    <ul id="intervention-list">
-                    </ul>
-                </div>
-            </div>
-
-            <div class="glass panel chart-container mt-4">
-                <h2>Napi utasforgalom vs. Megálló kapacitás</h2>
-                <canvas id="trafficChart"></canvas>
-            </div>
-
-        </section>
-
-        <section id="map" class="view-section">
-            <div class="glass panel map-placeholder">
-                <i class="fa-solid fa-map"></i>
-                <h2>Ide jöhet az interaktív térkép (pl. Leaflet.js vagy Google Maps API)</h2>
-            </div>
-        </section>
-
+        
+        <div id="bus-stop-list">
+            <ul>
+                <li>Adatok betöltése...</li>
+            </ul>
+        </div>
     </main>
-
-    <script src="script.js"></script>
 </body>
-
 </html>
