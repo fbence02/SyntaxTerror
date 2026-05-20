@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from typing import Any, Dict
+from typing import Any, Dict, List
 from pathlib import Path
 
 app = FastAPI(title="Jupyter-Frontend Híd API")
@@ -14,13 +14,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-stored_data: Dict[str, Any] = {}
+# Itt jelezzük, hogy ez egy lista lesz
+stored_data: List[Dict[str, Any]] = []
 
 CURRENT_DIR = Path(__file__).resolve().parent
 FRONTEND_DIR = CURRENT_DIR.parent
 
+# Itt is List-et várunk Simitől
 @app.post("/api/upload")
-async def receive_from_simi(data: Dict[str, Any]):
+async def receive_from_simi(data: List[Dict[str, Any]]):
     global stored_data
     stored_data = data
     return {"status": "success", "message": "Adat sikeresen fogadva Simitől!"}
