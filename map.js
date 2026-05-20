@@ -6,7 +6,11 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const markersLayer = L.layerGroup().addTo(map);
 let allStops = [];
-let currentFilter = 'all';
+let currentFilters = {
+    accessible: false,
+    sheltered: false,
+    problematic: false
+};
 let currentSort = 'asc';
 
 function getColor(score) {
@@ -18,17 +22,25 @@ function getColor(score) {
 function calculateRating(stop) {
     let score = 100;
 
-    if (stop["Covered"] === "No") score -= 20;
-    if (stop["Wheelchair accessible"] === "No") score -= 20;
-    if (stop["Lightning"] === "No") score -= 10;
-    if (stop["Bus bay available"] === "No") score -= 10;
-    if (stop["Spaces available"] && stop["Spaces available"].includes("0")) score -= 10;
-    
-    if (stop["Temperature"] && stop["Temperature"] > 30) score -= 10;
+    if (stop["Covered"] === "No") {
+        score -= 30;
+    }
+    if (stop["Wheelchair accessible"] === "No") {
+        score -= 25;
+    }
+    if (stop["Lightning"] === "No") {
+        score -= 15;
+    }
 
-    if (stop["Problems"] && stop["Problems"] !== "None" && stop["Problems"] !== "Nincs észlelt probléma" && stop["Problems"] !== "") {
-        const problemsCount = stop["Problems"].split(",").length;
-        score -= (problemsCount * 10);
+    if (stop["Spaces available"] && stop["Spaces available"].includes("0")) {
+        score -= 10;
+    }
+    if (stop["Bus bay available"] === "No") {
+        score -= 10;
+    }
+
+    if (stop["Temperature"] && stop["Temperature"] > 30) {
+        score -= 5;
     }
 
     return Math.max(0, score);
@@ -49,15 +61,14 @@ function initControls(jsonData) {
         controlsContainer.style.borderRadius = '8px';
 
         controlsContainer.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div style="display: flex; align-items: center;">
-                    <label for="filter-select" style="margin-right: 10px; font-weight: bold; font-size: 1.1rem; color: #fff;">Filter by:</label>
-                    <select id="filter-select" style="padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(0, 0, 0, 0.5); color: #fff; cursor: pointer; outline: none;">
-                        <option value="all">All</option>
-                        <option value="accessible">Wheelchair Accessible</option>
-                        <option value="sheltered">Rain Shelter</option>
-                        <option value="problematic">Has Problems</option>
-                    </select>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-weight: bold; font-size: 1.1rem; color: #fff;">Filter by:</span>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <label style="color: #fff; display: flex; align-items: center; cursor: pointer;"><input type="checkbox" id="filter-accessible" style="margin-right: 5px; cursor: pointer;"> Wheelchair Accessible</label>
+                        <label style="color: #fff; display: flex; align-items: center; cursor: pointer;"><input type="checkbox" id="filter-sheltered" style="margin-right: 5px; cursor: pointer;"> Rain Shelter</label>
+                        <label style="color: #fff; display: flex; align-items: center; cursor: pointer;"><input type="checkbox" id="filter-problematic" style="margin-right: 5px; cursor: pointer;"> Has Problems</label>
+                    </div>
                 </div>
                 <div style="display: flex; align-items: center;">
                     <label for="sort-select" style="margin-right: 10px; font-weight: bold; font-size: 1.1rem; color: #fff;">Sort by:</label>
@@ -74,8 +85,18 @@ function initControls(jsonData) {
         const ul = listParent.querySelector('ul');
         listParent.insertBefore(controlsContainer, ul);
 
-        document.getElementById('filter-select').addEventListener('change', (e) => {
-            currentFilter = e.target.value;
+        document.getElementById('filter-accessible').addEventListener('change', (e) => {
+            currentFilters.accessible = e.target.checked;
+            applyFiltersAndRender();
+        });
+
+        document.getElementById('filter-sheltered').addEventListener('change', (e) => {
+            currentFilters.sheltered = e.target.checked;
+            applyFiltersAndRender();
+        });
+
+        document.getElementById('filter-problematic').addEventListener('change', (e) => {
+            currentFilters.problematic = e.target.checked;
             applyFiltersAndRender();
         });
 
@@ -104,11 +125,13 @@ function initControls(jsonData) {
 function applyFiltersAndRender() {
     let filteredStops = [...allStops];
 
-    if (currentFilter === 'accessible') {
+    if (currentFilters.accessible) {
         filteredStops = filteredStops.filter(stop => stop["Wheelchair accessible"] === "Yes");
-    } else if (currentFilter === 'sheltered') {
+    }
+    if (currentFilters.sheltered) {
         filteredStops = filteredStops.filter(stop => stop["Covered"] === "Yes");
-    } else if (currentFilter === 'problematic') {
+    }
+    if (currentFilters.problematic) {
         filteredStops = filteredStops.filter(stop => stop["Problems"] && stop["Problems"] !== "None" && stop["Problems"] !== "Nincs észlelt probléma" && stop["Problems"] !== "");
     }
 
