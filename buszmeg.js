@@ -13,9 +13,9 @@ function getColor(rating) {
 function renderBusStops(stopsData) {
     stopsData.forEach(stop => {
         L.circleMarker([stop.lat, stop.lng], {
-            radius: 12, // Pötty mérete
+            radius: 12,
             fillColor: getColor(stop.rating),
-            color: '#000', // Pötty kerete
+            color: '#000',
             weight: 1,
             opacity: 1,
             fillOpacity: 0.8
@@ -26,9 +26,9 @@ function renderBusStops(stopsData) {
 }
 
 const mockBackendData = [
-    { id: 1, name: "Nagyállomás", lat: 47.5218, lng: 21.6247, rating: 85 }, // Piros lesz
-    { id: 2, name: "Csokonai Színház", lat: 47.5298, lng: 21.6253, rating: 45 }, // Sárga lesz
-    { id: 3, name: "Egyetem tér", lat: 47.5539, lng: 21.6219, rating: 20 }   // Zöld lesz
+    { id: 1, name: "Nagyállomás", lat: 47.5218, lng: 21.6247, rating: 85 },
+    { id: 2, name: "Csokonai Színház", lat: 47.5298, lng: 21.6253, rating: 45 },
+    { id: 3, name: "Egyetem tér", lat: 47.5539, lng: 21.6219, rating: 20 }
 ];
 
 renderBusStops(mockBackendData);
