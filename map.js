@@ -1,3 +1,4 @@
+// Map Initialization and Global State
 const map = L.map('map').setView([47.5316, 21.6273], 13);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -10,58 +11,47 @@ let currentFilters = {
     accessible: false,
     sheltered: false,
     problematic: false,
-    heatEmergency: false // <-- New filter for Heatwave Emergency
+    heatEmergency: false
 };
-let heatThreshold = 30; // Default emergency threshold (30°C)
+let heatThreshold = 30;
 let currentSort = 'asc';
 
+// Utility Functions
 function getColor(score) {
-    if (score >= 60) return '#2ed573'; // Good/Acceptable
-    if (score >= 33) return '#ffa502'; // Needs improvement
-    return '#ff4757'; // Critical
+    if (score >= 60) return '#2ed573';
+    if (score >= 33) return '#ffa502';
+    return '#ff4757';
 }
 
+// Score Calculation Logic
 function calculateRating(stop) {
-    // 1. INFRASTRUCTURE (Max 40 points)
     let infraScore = 0;
     if (stop["Covered"] === "Yes") infraScore += 15;
     if (stop["Wheelchair accessible"] === "Yes") infraScore += 15;
     if (stop["Lightning"] === "Yes") infraScore += 5;
     if (stop["Bus bay available"] === "Yes") infraScore += 5;
 
-    // 2. COMFORT & SEATING (Max 20 points)
-    // Asymptotic growth: first few seats matter most
     let spaces = parseInt(stop["Spaces available"]) || 0;
     let comfortScore = 20 * (1 - Math.exp(-0.15 * spaces));
 
-    // 3. ENVIRONMENT & CLIMATE (Max 40 points)
-    // 3a. Vegetation bonus (Max 15 points)
     let trees = parseInt(stop["Vegetation"]) || 0;
     let vegetationScore = 15 * (1 - Math.exp(-0.3 * trees));
 
-    // 3b. Discomfort Index / Heat (Max 25 points)
     let temp = parseFloat(stop["Temperature"]) || 25;
     let humidity = parseFloat(stop["Humidity"]) || 50;
     let climateScore = 25;
 
     if (temp > 25) {
-        // High humidity makes heat feel worse
         let discomfort = (temp - 25) * (1 + (humidity / 100));
-        
-        // Exponential penalty for heat
         let penalty = 1.5 * Math.pow(discomfort, 1.2);
-        
-        // Ensure climate score doesn't drop below 0
         climateScore = Math.max(0, 25 - penalty);
     }
 
-    // TOTAL SCORE
     let totalScore = infraScore + comfortScore + vegetationScore + climateScore;
-    
-    // Round and constrain between 0-100
     return Math.min(100, Math.max(0, Math.round(totalScore)));
 }
 
+// UI and Controls Initialization
 function initControls(jsonData) {
     const listParent = document.querySelector('#bus-stop-list');
 
@@ -77,7 +67,6 @@ function initControls(jsonData) {
         controlsContainer.style.borderRadius = '8px';
 
         controlsContainer.innerHTML = `
-            <!-- STATS PANEL -->
             <div id="stats-panel" style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%;"></div>
 
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
@@ -100,7 +89,6 @@ function initControls(jsonData) {
                 </div>
             </div>
 
-            <!-- HEATWAVE EMERGENCY PANEL -->
             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
                 <label style="color: #ff4757; font-weight: bold; display: flex; align-items: center; cursor: pointer; font-size: 1.1rem;">
                     <input type="checkbox" id="filter-heatwave" style="margin-right: 10px; width: 18px; height: 18px;">
@@ -118,13 +106,11 @@ function initControls(jsonData) {
         const ul = listParent.querySelector('ul');
         listParent.insertBefore(controlsContainer, ul);
 
-        // Event listeners for basic filters
         document.getElementById('filter-accessible').addEventListener('change', (e) => { currentFilters.accessible = e.target.checked; applyFiltersAndRender(); });
         document.getElementById('filter-sheltered').addEventListener('change', (e) => { currentFilters.sheltered = e.target.checked; applyFiltersAndRender(); });
         document.getElementById('filter-problematic').addEventListener('change', (e) => { currentFilters.problematic = e.target.checked; applyFiltersAndRender(); });
         document.getElementById('sort-select').addEventListener('change', (e) => { currentSort = e.target.value; applyFiltersAndRender(); });
 
-        // Event listeners for heatwave emergency
         const heatFilter = document.getElementById('filter-heatwave');
         const heatControls = document.getElementById('heatwave-controls');
         const heatSlider = document.getElementById('heat-slider');
@@ -158,26 +144,23 @@ function initControls(jsonData) {
     applyFiltersAndRender();
 }
 
+// Filtering and Sorting Logic
 function applyFiltersAndRender() {
     let filteredStops = [...allStops];
 
-    // 1. HEATWAVE EMERGENCY FILTER (Strict filter: keeps only the critical ones)
     if (currentFilters.heatEmergency) {
         filteredStops = filteredStops.filter(stop => {
             const temp = parseFloat(stop.Temperature) || 0;
             const trees = parseInt(stop.Vegetation) || 0;
             
-            // Critical condition: Temp >= threshold, NO shelter, and NO trees
             return temp >= heatThreshold && stop["Covered"] === "No" && trees === 0;
         });
     } else {
-        // 2. NORMAL FILTERS (Applied only if emergency mode is off)
         if (currentFilters.accessible) filteredStops = filteredStops.filter(stop => stop["Wheelchair accessible"] === "Yes");
         if (currentFilters.sheltered) filteredStops = filteredStops.filter(stop => stop["Covered"] === "Yes");
         if (currentFilters.problematic) filteredStops = filteredStops.filter(stop => stop["Problems"] && stop["Problems"] !== "None" && stop["Problems"] !== "No reported issues" && stop["Problems"] !== "");
     }
 
-    // 3. SORTING
     if (currentSort === 'asc') filteredStops.sort((a, b) => a.score - b.score);
     else if (currentSort === 'desc') filteredStops.sort((a, b) => b.score - a.score);
     else if (currentSort === 'name_asc') filteredStops.sort((a, b) => a["Bus stop"].localeCompare(b["Bus stop"], 'en'));
@@ -186,6 +169,7 @@ function applyFiltersAndRender() {
     renderFilteredStops(filteredStops);
 }
 
+// Rendering Logic
 function renderFilteredStops(stops) {
     updateStats(stops);
     const listContainer = document.querySelector('#bus-stop-list ul');
@@ -195,7 +179,6 @@ function renderFilteredStops(stops) {
     stops.forEach(stop => {
         const color = getColor(stop.score);
         
-        // HEATWAVE LOGIC
         const isHeatEmergency = stop.Temperature >= heatThreshold && 
                                 stop["Covered"] === "No" && 
                                 (parseInt(stop.Vegetation) || 0) === 0;
@@ -247,24 +230,21 @@ function renderFilteredStops(stops) {
     });
 }
 
+// Statistics Update Logic
 function updateStats(stops) {
     const statsDiv = document.getElementById('stats-panel');
     if (!statsDiv) return;
 
-    // Calculations
     const totalStops = stops.length;
     
-    // Calculate average score (prevent division by zero)
     const avgScore = totalStops > 0 
         ? Math.round(stops.reduce((sum, stop) => sum + stop.score, 0) / totalStops) 
         : 0;
         
     const accessibleCount = stops.filter(s => s["Wheelchair accessible"] === "Yes").length;
     
-    // Problematic stops
     const problematicCount = stops.filter(s => s.Problems && s.Problems !== "No reported issues" && s.Problems !== "None").length;
 
-    // Render stats in 3 boxes
     statsDiv.innerHTML = `
         <div style="flex: 1; background: rgba(46, 213, 115, 0.15); border-left: 4px solid #2ed573; padding: 10px; border-radius: 4px;">
             <div style="font-size: 0.85rem; color: #ccc; text-transform: uppercase; font-weight: bold;">Average Index</div>
@@ -281,17 +261,17 @@ function updateStats(stops) {
     `;
 }
 
-// THIS PART INITIALIZES THE DATA FETCHING
-fetch('/api/data')
+// Data Fetching and App Initialization
+fetch('BusStop.json')
     .then(response => {
-        if (!response.ok) throw new Error('Server error');
+        if (!response.ok) throw new Error('Hiba történt a fájl betöltése során (lehet, hogy nem fut a lokális szerver?)');
         return response.json();
     })
     .then(data => {
-        if (Object.keys(data).length === 0) {
-            console.warn("The backend has not received data yet.");
+        if (!data || Object.keys(data).length === 0) {
+            console.warn("A JSON fájl üres vagy érvénytelen adatokat tartalmaz.");
             return;
         }
         initControls(data);
     })
-    .catch(error => console.error("Error accessing the backend:", error));
+    .catch(error => console.error("Hiba a JSON betöltése során:", error));
